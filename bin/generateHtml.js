@@ -1,62 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generate = void 0;
-function generate(items, toString) {
-    const result = `<!DOCTYPE html>
-<head>
-    <title>Module Federation Start</title>
-    <style>
-        *,
-        html {
-            margin: 0;
-            padding: 0;
-            border: 0;
-        }
-
-        html {
-            width: 100%;
-            height: 100%;
-        }
-
-        body {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            background-color: rgb(236, 152, 42);
-        }
-
-        .center {
-            width: 100%;
-            height: 50%;
-            margin: 0;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-family: "Trebuchet MS", Helvetica, sans-serif;
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 144px;
-        }
-
-        p {
-            font-size: 64px;
-        }
-    </style>
-</head>
-<body>
-    <div class="center">
-        <h1>Hello Again!</h1>
-        <p>This is served from a file</p>
-        ${items.map(toString).join('\n')}
-    </div>
-</body>
-
-</html>`;
+module.exports = function generateHome(items, mapper) {
+    var mapResults = Object.entries(items).map(function (_a) {
+        var key = _a[0], value = _a[1];
+        return mapper(key, value);
+    });
+    var result = "<!DOCTYPE html>\n<head>\n    <title>Module Federation Start</title>\n    <style>\n        *,\n        html {\n            margin: 0;\n            padding: 0;\n            border: 0;\n        }\n\n        html {\n            width: 100%;\n            height: 100%;\n        }\n\n        body {\n            width: 100%;\n            height: 100%;\n            position: relative;\n        }\n\n        .title {\n            width: 100%;\n            background-color: rgb(236, 152, 42);\n            transform: translate(-50%, -50%);\n            color: white;\n            font-family: \"Trebuchet MS\", Helvetica, sans-serif;\n            text-align: center;\n        }\n\n        .center {\n            display: flex;\n            flex-direction: column;\n            justify-content: center;\n            align-items: center;\n        }\n\n        h1 {\n            font-size: 40px;\n        }\n\n        p {\n            font-size: 12px;\n        }\n    </style>\n    <script>\n    ".concat(mapResults.map(function (items) { return items.script; }), "\n    </script>\n</head>\n<body>\n    <div class=\"center\">\n    <div class=\"title\"><h1>Module federation remotes listener</h1></div>\n        \n        ").concat(mapResults.map(function (items) { return items.html; }), "\n    </div>\n</body>\n\n</html>");
     return result;
-}
-exports.generate = generate;
+};
 //# sourceMappingURL=generateHtml.js.map

@@ -1,99 +1,81 @@
 #!/usr/bin/env node
+
 const yargs = require('yargs');
-const http = require('http');
+const startServer = require('./server');
 const fs = require('fs');
-const { load } = require('js-yaml');
-const { generateHome } = require('./generateHtml');
-
-export interface Remote {
-  remoteUrl: string;
-  localPath: string;
-  localCommand: string;
-}
+const readConfig = require('./readConfig');
 
 /**
- * Reads mf-scripts config file
+ * Converts options to object if it is a promise
  */
-async function readConfig(configFile, request) {
-  const data = await fs.readFileSync(configFile, 'utf8');
-  let result;
-  if (configFile.endsWith('.json5') || configFile.endsWith('.json')) {
-    result = require('json5').parse(data);
-  } else if (configFile.endsWith('.js') || configFile.endsWith('.cjs')) {
-    result = require(configFile);
-    if (result.default != null) {
-      result = result.default;
-    }
-    if (typeof result === 'function') {
-      result = result(request);
-    }
-    result = await Promise.resolve(result);
-  } else if (configFile.endsWith('.toml')) {
-    result = require('toml').parse(data);
-  } else {
-    result = load(data);
+function convertOptions<T>(
+  options: T | Promise<T>,
+  callback: (options: T) => void
+) {
+  if (options instanceof Promise) {
+    return options.then(opt => callback(opt));
   }
-  return { result, configFile };
+  return callback(options);
 }
 
-/**
- * Starts mf-scripts server
- * @param {object} config
- * @param {string} host
- * @param {number} port
- */
-function startServer(config, host, port) {
-  const requestListener = function (req, res) {
-    res.setHeader('Content-Type', 'text/html');
-    res.writeHead(200);
-    res.end(
-      generateHome(config?.remotes ?? {}, (key: string, remote: Remote) => {
-        return `<div>`;
-      })
-    );
-  };
+function main() {
+  /**
+   * Get options
+   */
+  let options = yargs
+    .usage('$0 <cmd> [args]')
+    .option('p', {
+      alias: 'port',
+      describe: 'mf-scripts server port',
+      type: 'number',
+      demandOption: false,
+    })
+    .help().argv;
 
-  const server = http.createServer(requestListener);
+  convertOptions(options, opt => (options = opt));
 
-  server.on('error', e => {
-    if (e.code === 'EADDRINUSE') {
-      console.error('Address in use, retrying...');
-      setTimeout(() => {
-        server.close();
-        server.listen({ port: 0, host });
-      }, 1000);
+  const host = 'localhost';
+  // @ts-ignore type validated by convertOptions
+  const port = options?.p ?? 8080;
+
+  /**
+   * Read all files in current directory
+   */
+  const files: string[] = fs.readdirSync(process.cwd());
+  const configs: { [key: string]: string } = {};
+  for (const file of files) {
+    if (file.startsWith('mf-scripts') || file === '.mf-scripts') {
+      const filespec = file.split('.');
+
+      const type = filespec?.[1];
+      if (filespec.length === 4) {
+        configs[filespec[1]] = file;
+        continue;
+      }
+      configs['default'] = file;
     }
-  });
-  server.on('listening', () => {
-    console.log(`Server is running on http://${host}:${server.address().port}`);
-  });
-  server.listen({
-    port,
-    host,
-  });
+  }
+
+  if (
+    configs.default === null &&
+    configs.dev === null &&
+    configs.prod === null
+  ) {
+    console.error('No mf-scripts config file found');
+    return;
+  }
+
+  // TODO: support other types
+  readConfig(configs?.dev ?? configs.default ?? configs.prod, {
+    options,
+  })
+    .then((result: { [key: string]: any }) => {
+      console.log(result);
+      startServer(result, host, port);
+    })
+    .catch((err: any) => console.error(err));
 }
 
-/**
- * Get options
- */
-const options = yargs
-  .usage('$0 <cmd> [args]')
-  .option('p', {
-    alias: 'port',
-    describe: 'mf-scripts server port',
-    type: 'number',
-    demandOption: false,
-  })
-  .help().argv;
+main();
 
-const host = 'localhost';
-const port = options.port ?? 8080;
-// TODO: support other types
-readConfig('mf.config.json', {
-  options,
-})
-  .then(({ result: config }) => {
-    console.log(config);
-    startServer(config, host, port);
-  })
-  .catch(err => console.error(err));
+module.exports = {};
