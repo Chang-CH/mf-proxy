@@ -1,0 +1,13 @@
+remotes:
+    mf-scripts1:
+        remoteUrl: chang-ch.github.io
+        localPath: master
+        localCommand: master
+        moduleName: component1
+        bonjourName: webpack-component1
+    fake:
+        remoteUrl: chang-ch.github.io
+        localPath: master
+        localCommand: master
+        moduleName: fake
+        bonjourName: webpack-fake

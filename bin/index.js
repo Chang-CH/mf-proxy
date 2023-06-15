@@ -1,25 +1,27 @@
 #!/usr/bin/env node
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-var yargs = require('yargs');
-var startServer = require('./server');
-var fs = require('fs');
-var readConfig = require('./readConfig');
+const yargs_1 = __importDefault(require("yargs"));
+const server_1 = __importDefault(require("./server"));
+const fs_1 = __importDefault(require("fs"));
+const readConfig_1 = __importDefault(require("./readConfig"));
 /**
  * Converts options to object if it is a promise
  */
 function convertOptions(options, callback) {
     if (options instanceof Promise) {
-        return options.then(function (opt) { return callback(opt); });
+        return options.then(opt => callback(opt));
     }
     return callback(options);
 }
 function main() {
-    var _a, _b, _c;
     /**
      * Get options
      */
-    var options = yargs
+    let options = yargs_1.default
         .usage('$0 <cmd> [args]')
         .option('p', {
         alias: 'port',
@@ -28,20 +30,19 @@ function main() {
         demandOption: false,
     })
         .help().argv;
-    convertOptions(options, function (opt) { return (options = opt); });
-    var host = 'localhost';
+    convertOptions(options, opt => (options = opt));
+    const host = 'localhost';
     // @ts-ignore type validated by convertOptions
-    var port = (_a = options === null || options === void 0 ? void 0 : options.p) !== null && _a !== void 0 ? _a : 8080;
+    const port = options?.p ?? 8080;
     /**
      * Read all files in current directory
      */
-    var files = fs.readdirSync(process.cwd());
-    var configs = {};
-    for (var _i = 0, files_1 = files; _i < files_1.length; _i++) {
-        var file = files_1[_i];
+    const files = fs_1.default.readdirSync(process.cwd());
+    const configs = {};
+    for (const file of files) {
         if (file.startsWith('mf-scripts') || file === '.mf-scripts') {
-            var filespec = file.split('.');
-            var type = filespec === null || filespec === void 0 ? void 0 : filespec[1];
+            const filespec = file.split('.');
+            const type = filespec?.[1];
             if (filespec.length === 4) {
                 configs[filespec[1]] = file;
                 continue;
@@ -56,15 +57,15 @@ function main() {
         return;
     }
     // TODO: support other types
-    readConfig((_c = (_b = configs === null || configs === void 0 ? void 0 : configs.dev) !== null && _b !== void 0 ? _b : configs.default) !== null && _c !== void 0 ? _c : configs.prod, {
-        options: options,
+    (0, readConfig_1.default)(configs?.dev ?? configs.default ?? configs.prod, {
+        options,
     })
-        .then(function (result) {
+        .then((result) => {
         console.log(result);
-        startServer(result, host, port);
+        (0, server_1.default)(result, host, port);
     })
-        .catch(function (err) { return console.error(err); });
+        .catch((err) => console.error(err));
 }
+exports.default = main;
 main();
-module.exports = {};
 //# sourceMappingURL=index.js.map

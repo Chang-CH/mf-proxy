@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-const yargs = require('yargs');
-const startServer = require('./server');
-const fs = require('fs');
-const readConfig = require('./readConfig');
+import yargs from 'yargs';
+import startServer from './server';
+import fs from 'fs';
+import readConfig from './readConfig';
 
 /**
  * Converts options to object if it is a promise
@@ -18,7 +18,7 @@ function convertOptions<T>(
   return callback(options);
 }
 
-function main() {
+export default function main() {
   /**
    * Get options
    */
@@ -77,5 +77,3 @@ function main() {
 }
 
 main();
-
-module.exports = {};

@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "development tools for module federated repositories",
   "main": "bin/index.js",
+  "type":"commonjs",
   "scripts": {
     "build": "npx tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -21,11 +22,14 @@
     "js-yaml": "^4.1.0",
     "json5": "^2.2.3",
     "toml": "^3.0.0",
+    "ws": "^8.13.0",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
+    "@types/bonjour": "^3.5.10",
     "@types/js-yaml": "^4.0.5",
     "@types/node": "^20.2.5",
+    "@types/ws": "^8.5.5",
     "@types/yargs": "^17.0.24",
     "eslint": "^8.42.0",
     "prettier": "2.8.8",
