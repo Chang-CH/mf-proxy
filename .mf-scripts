@@ -6,7 +6,7 @@ remotes:
         moduleName: component1
         bonjourName: webpack-component1
     fake:
-        remoteUrl: chang-ch.github.io
+        remoteUrl: chang-ch.github.io/mf-source/VueButton
         localPath: master
         localCommand: master
         moduleName: fake

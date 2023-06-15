@@ -1,7 +1,6 @@
 import { generateHome } from './generateSite';
-import { IncomingMessage, ServerResponse } from 'http';
+import { IncomingMessage, Server, ServerResponse } from 'http';
 import http from 'http';
-import url, { parse } from 'url';
 import bonjourConstructor, { RemoteService } from 'bonjour';
 import { WebSocket, WebSocketServer } from 'ws';
 
@@ -16,8 +15,10 @@ export default function startServer(
   host: string,
   port: number
 ) {
-  const locals: { [key: string]: RemoteService } = {};
-  let server: any;
+  const locals: { [key: string]: RemoteService } = {}; // local dev servers of known module names
+  const preferrence: { [key: string]: 'local' | 'remote' } = {}; // user preference for local/remote
+  const proxies = {}; // proxy servers for remotes
+  let server: Server;
 
   /**
    * HTTP server for html hosting and proxy routes
@@ -32,16 +33,43 @@ export default function startServer(
     if (reqUrl.pathname == '/') {
       res.setHeader('Content-Type', 'text/html');
       res.writeHead(200);
-      res.end(generateHome(config?.remotes ?? {}, server.address().port));
-    } else if (reqUrl.pathname == '/locals') {
-      if (req.method === 'POST') {
+      res.end(
+        generateHome(config?.remotes ?? {}, server?.address()?.port ?? 8080)
+      );
+    } else {
+      const request = reqUrl.pathname.split('/');
+      const module = request[1];
+      const path = request.slice(2).join('/');
+      let url;
+      if (locals[module] && preferrence[module] === 'local' && locals[module]) {
+        // proxy to local dev server
+        const local = locals[module];
+        url = `http://localhost:${local.port}/${path}`;
+      } else {
+        // proxy to remote dev server
+        url = `https://${config?.remotes?.[module]?.remoteUrl}/${path}`;
       }
 
-      res.write('hello world');
-      res.end();
-    } else if (reqUrl.pathname === '/start') {
-      res.write('hello world');
-      res.end();
+      fetch(url)
+        .then(response => {
+          console.log(response);
+          const body = response.body;
+          if (!body) {
+            res.writeHead(response.status);
+            res.end();
+            return;
+          }
+          response.text().then(text => {
+            console.log(text);
+            res.writeHead(response.status);
+            res.end(text);
+          });
+        })
+        .catch(err => {
+          console.log('fetch error: ', err);
+          res.writeHead(500);
+          res.end();
+        });
     }
   };
 
@@ -76,7 +104,6 @@ export default function startServer(
   wss.on('connection', (ws: WebSocket) => {
     clients.push(ws);
     ws.on('error', console.error);
-    // TODO: add some logic to differentiate different clients maybe cookies? headers?
     ws.on('message', data => {
       console.log('received: %s', data);
     });
