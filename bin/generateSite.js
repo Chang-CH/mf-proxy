@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateHome = void 0;
-function generateHome(items, serverUrl) {
+function generateHome(items) {
     const result = `<!DOCTYPE html>
     <head>
     <title>Module Federation Start</title>
@@ -112,8 +112,8 @@ function generateHome(items, serverUrl) {
         return `<div class="remote"><strong class="module-name">${value.moduleName}</strong>
         <div class="tag offline" id="${value.moduleName}-status" name="${value.moduleName}-status">offline</div>
         <select name="${key}-source" id="${key}-source" onchange="changeSource('${value.moduleName}', this.value)">
-        <option value="remote" id="remote">Remote</option>
         <option value="local" id="local">Local</option>
+        <option value="remote" id="remote">Remote</option>
         </select>
         </div>`;
     })

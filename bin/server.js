@@ -8,67 +8,83 @@ const http_1 = __importDefault(require("http"));
 const bonjour_1 = __importDefault(require("bonjour"));
 const ws_1 = require("ws");
 /**
+ * HTTP server for html hosting and proxy routes
+ * @param req
+ * @param res
+ */
+const createListener = (config, locals, preference) => (req, res) => {
+    // @ts-ignore
+    const baseURL = req.protocol + '://' + req.headers.host + '/';
+    const reqUrl = new URL(req.url ?? '/', baseURL);
+    /** Base path: render admin panel */
+    if (reqUrl.pathname == '/') {
+        res.setHeader('Content-Type', 'text/html');
+        res.writeHead(200);
+        res.end((0, generateSite_1.generateHome)(config?.remotes ?? {}));
+        return;
+    }
+    /** Proxy to remotes */
+    const request = reqUrl.pathname.split('/');
+    const module = request[1];
+    // Not a valid module. return 404
+    if (!(module in config?.remotes)) {
+        res.writeHead(404);
+        res.end();
+        return;
+    }
+    const path = request.slice(2).join('/');
+    let url;
+    if (locals[module] && preference[module] !== 'remote') {
+        // proxy to local dev server
+        const local = locals[module];
+        url = `http://localhost:${local.port}/${path}`;
+    }
+    else {
+        // proxy to remote dev server
+        url = `https://${config?.remotes?.[module]?.remoteUrl}/${path}`;
+    }
+    console.log(preference, preference[module], ' fetch: ', url);
+    fetch(url)
+        .then(response => {
+        const body = response.body;
+        if (!body) {
+            res.writeHead(response.status);
+            res.end();
+            return;
+        }
+        response.text().then(text => {
+            res.writeHead(response.status);
+            res.end(text);
+        });
+    })
+        .catch(err => {
+        console.log('fetch error: ', err);
+        res.writeHead(500);
+        res.end();
+    });
+};
+const createSocketListener = (preference) => (data) => {
+    const message = JSON.parse(data.toString());
+    if (!message || !message.module || !message.source)
+        return;
+    preference[message.module] =
+        message.source === 'local' ? 'local' : 'remote';
+    // TODO: sync up preference through websockets.
+    console.log('updated preference: ', preference);
+};
+/**
  * Starts mf-scripts server
  * @param {object} config
  * @param {string} host
  * @param {number} port
  */
 function startServer(config, host, port) {
-    const locals = {}; // local dev servers of known module names
-    const preferrence = {}; // user preference for local/remote
-    const proxies = {}; // proxy servers for remotes
     let server;
-    /**
-     * HTTP server for html hosting and proxy routes
-     * @param req
-     * @param res
-     */
-    const requestListener = function (req, res) {
-        // @ts-ignore
-        const baseURL = req.protocol + '://' + req.headers.host + '/';
-        const reqUrl = new URL(req.url ?? '/', baseURL);
-        if (reqUrl.pathname == '/') {
-            res.setHeader('Content-Type', 'text/html');
-            res.writeHead(200);
-            res.end((0, generateSite_1.generateHome)(config?.remotes ?? {}, server?.address()?.port ?? 8080));
-        }
-        else {
-            const request = reqUrl.pathname.split('/');
-            const module = request[1];
-            const path = request.slice(2).join('/');
-            let url;
-            if (locals[module] && preferrence[module] === 'local' && locals[module]) {
-                // proxy to local dev server
-                const local = locals[module];
-                url = `http://localhost:${local.port}/${path}`;
-            }
-            else {
-                // proxy to remote dev server
-                url = `https://${config?.remotes?.[module]?.remoteUrl}/${path}`;
-            }
-            fetch(url)
-                .then(response => {
-                console.log(response);
-                const body = response.body;
-                if (!body) {
-                    res.writeHead(response.status);
-                    res.end();
-                    return;
-                }
-                response.text().then(text => {
-                    console.log(text);
-                    res.writeHead(response.status);
-                    res.end(text);
-                });
-            })
-                .catch(err => {
-                console.log('fetch error: ', err);
-                res.writeHead(500);
-                res.end();
-            });
-        }
-    };
-    server = http_1.default.createServer(requestListener);
+    const locals = {}; // local dev servers of known module names
+    const preference = {}; // user preference for local/remote
+    const httpListener = createListener(config, locals, preference);
+    const wsListener = createSocketListener(preference);
+    server = http_1.default.createServer(httpListener);
     server.on('error', (e) => {
         console.error(e);
         if (e.code === 'EADDRINUSE') {
@@ -94,18 +110,16 @@ function startServer(config, host, port) {
     wss.on('connection', (ws) => {
         clients.push(ws);
         ws.on('error', console.error);
-        ws.on('message', data => {
-            console.log('received: %s', data);
-        });
-        const message = { fake: 8080 };
+        ws.on('message', wsListener);
+        // Send client currently known local webpack serverss
+        const message = {};
         for (const [key, value] of Object.entries(locals)) {
             message[key] = value.port;
         }
         ws.send(JSON.stringify(message));
-        console.log('ws connected');
     });
     server.on('upgrade', (request, socket, head) => {
-        console.log('upgrade req');
+        // TODO: detect inactive sockets?
         wss.handleUpgrade(request, socket, head, (ws) => {
             wss.emit('connection', ws, request);
         });
@@ -115,7 +129,7 @@ function startServer(config, host, port) {
         locals[data.name] = data;
         const message = {};
         message[data.name] = data.port;
-        console.log('found', data);
+        console.log('webpack server registered: ', data.name);
         for (const client of clients) {
             client.send(JSON.stringify(message));
         }

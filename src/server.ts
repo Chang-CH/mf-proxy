@@ -5,6 +5,86 @@ import bonjourConstructor, { RemoteService } from 'bonjour';
 import { WebSocket, WebSocketServer } from 'ws';
 
 /**
+ * HTTP server for html hosting and proxy routes
+ * @param req
+ * @param res
+ */
+const createListener =
+  (
+    config: { [key: string]: any },
+    locals: { [key: string]: RemoteService },
+    preference: { [key: string]: 'local' | 'remote' }
+  ) =>
+  (req: IncomingMessage, res: ServerResponse) => {
+    // @ts-ignore
+    const baseURL = req.protocol + '://' + req.headers.host + '/';
+    const reqUrl = new URL(req.url ?? '/', baseURL);
+
+    /** Base path: render admin panel */
+    if (reqUrl.pathname == '/') {
+      res.setHeader('Content-Type', 'text/html');
+      res.writeHead(200);
+      res.end(generateHome(config?.remotes ?? {}));
+      return;
+    }
+
+    /** Proxy to remotes */
+    const request = reqUrl.pathname.split('/');
+    const module = request[1];
+
+    // Not a valid module. return 404
+    if (!(module in config?.remotes)) {
+      res.writeHead(404);
+      res.end();
+      return;
+    }
+
+    const path = request.slice(2).join('/');
+
+    let url: string;
+    if (locals[module] && preference[module] !== 'remote') {
+      // proxy to local dev server
+      const local = locals[module];
+      url = `http://localhost:${local.port}/${path}`;
+    } else {
+      // proxy to remote dev server
+      url = `https://${config?.remotes?.[module]?.remoteUrl}/${path}`;
+    }
+
+    console.log('fetch: ', url);
+
+    fetch(url)
+      .then(response => {
+        const body = response.body;
+        if (!body) {
+          res.writeHead(response.status);
+          res.end();
+          return;
+        }
+        response.text().then(text => {
+          res.writeHead(response.status);
+          res.end(text);
+        });
+      })
+      .catch(err => {
+        console.log('fetch error: ', err);
+        res.writeHead(500);
+        res.end();
+      });
+  };
+
+const createSocketListener =
+  (preference: { [key: string]: 'local' | 'remote' }) => (data: any) => {
+    const message = JSON.parse(data.toString());
+    if (!message || !message.module || !message.source) return;
+
+    preference[message.module] =
+      message.source === 'local' ? 'local' : 'remote';
+    // TODO: sync up preference through websockets.
+    console.log('updated preference: ', preference);
+  };
+
+/**
  * Starts mf-scripts server
  * @param {object} config
  * @param {string} host
@@ -15,65 +95,15 @@ export default function startServer(
   host: string,
   port: number
 ) {
-  const locals: { [key: string]: RemoteService } = {}; // local dev servers of known module names
-  const preferrence: { [key: string]: 'local' | 'remote' } = {}; // user preference for local/remote
-  const proxies = {}; // proxy servers for remotes
   let server: Server;
 
-  /**
-   * HTTP server for html hosting and proxy routes
-   * @param req
-   * @param res
-   */
-  const requestListener = function (req: IncomingMessage, res: ServerResponse) {
-    // @ts-ignore
-    const baseURL = req.protocol + '://' + req.headers.host + '/';
-    const reqUrl = new URL(req.url ?? '/', baseURL);
+  const locals: { [key: string]: RemoteService } = {}; // local dev servers of known module names
+  const preference: { [key: string]: 'local' | 'remote' } = {}; // user preference for local/remote
 
-    if (reqUrl.pathname == '/') {
-      res.setHeader('Content-Type', 'text/html');
-      res.writeHead(200);
-      res.end(
-        generateHome(config?.remotes ?? {}, server?.address()?.port ?? 8080)
-      );
-    } else {
-      const request = reqUrl.pathname.split('/');
-      const module = request[1];
-      const path = request.slice(2).join('/');
-      let url;
-      if (locals[module] && preferrence[module] === 'local' && locals[module]) {
-        // proxy to local dev server
-        const local = locals[module];
-        url = `http://localhost:${local.port}/${path}`;
-      } else {
-        // proxy to remote dev server
-        url = `https://${config?.remotes?.[module]?.remoteUrl}/${path}`;
-      }
+  const httpListener = createListener(config, locals, preference);
+  const wsListener = createSocketListener(preference);
 
-      fetch(url)
-        .then(response => {
-          console.log(response);
-          const body = response.body;
-          if (!body) {
-            res.writeHead(response.status);
-            res.end();
-            return;
-          }
-          response.text().then(text => {
-            console.log(text);
-            res.writeHead(response.status);
-            res.end(text);
-          });
-        })
-        .catch(err => {
-          console.log('fetch error: ', err);
-          res.writeHead(500);
-          res.end();
-        });
-    }
-  };
-
-  server = http.createServer(requestListener);
+  server = http.createServer(httpListener);
 
   server.on('error', (e: Error & { code: string }) => {
     console.error(e);
@@ -104,32 +134,32 @@ export default function startServer(
   wss.on('connection', (ws: WebSocket) => {
     clients.push(ws);
     ws.on('error', console.error);
-    ws.on('message', data => {
-      console.log('received: %s', data);
-    });
-    const message: { [key: string]: number } = { fake: 8080 };
+    ws.on('message', wsListener);
+
+    // Send client currently known local webpack serverss
+    const message: { [key: string]: number } = {};
     for (const [key, value] of Object.entries(locals)) {
       message[key] = value.port;
     }
     ws.send(JSON.stringify(message));
-    console.log('ws connected');
   });
 
   server.on('upgrade', (request: IncomingMessage, socket: any, head: any) => {
-    console.log('upgrade req');
+    // TODO: detect inactive sockets?
     wss.handleUpgrade(request, socket, head, (ws: any) => {
       wss.emit('connection', ws, request);
     });
   });
 
   const bonjour = bonjourConstructor();
+  // TODO: detect webpack server dead
   const browser = bonjour.find(
     { type: 'http', subtypes: ['webpack'] },
     (data: RemoteService) => {
       locals[data.name] = data;
       const message: { [key: string]: number } = {};
       message[data.name] = data.port;
-      console.log('found', data);
+      console.log('webpack server registered: ', data.name);
       for (const client of clients) {
         client.send(JSON.stringify(message));
       }

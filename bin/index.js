@@ -61,7 +61,6 @@ function main() {
         options,
     })
         .then((result) => {
-        console.log(result);
         (0, server_1.default)(result, host, port);
     })
         .catch((err) => console.error(err));

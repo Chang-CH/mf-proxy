@@ -6,10 +6,7 @@ interface Remote {
   localCommand?: string;
 }
 
-export function generateHome(
-  items: { [key: string]: Remote },
-  serverUrl: string | number
-) {
+export function generateHome(items: { [key: string]: Remote }) {
   const result = `<!DOCTYPE html>
     <head>
     <title>Module Federation Start</title>
@@ -120,8 +117,8 @@ export function generateHome(
         return `<div class="remote"><strong class="module-name">${value.moduleName}</strong>
         <div class="tag offline" id="${value.moduleName}-status" name="${value.moduleName}-status">offline</div>
         <select name="${key}-source" id="${key}-source" onchange="changeSource('${value.moduleName}', this.value)">
-        <option value="remote" id="remote">Remote</option>
         <option value="local" id="local">Local</option>
+        <option value="remote" id="remote">Remote</option>
         </select>
         </div>`;
       })

@@ -70,7 +70,6 @@ export default function main() {
     options,
   })
     .then((result: { [key: string]: any }) => {
-      console.log(result);
       startServer(result, host, port);
     })
     .catch((err: any) => console.error(err));

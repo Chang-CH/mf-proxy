@@ -11,3 +11,9 @@ remotes:
         localCommand: master
         moduleName: fake
         bonjourName: webpack-fake
+    vuebutton:
+        remoteUrl: chang-ch.github.io/mf-source/VueButton
+        localPath: master
+        localCommand: master
+        moduleName: vuebutton
+        bonjourName: vuebutton
