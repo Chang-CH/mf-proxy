@@ -1,5 +1,5 @@
 {
-  "name": "mf-proxy",
+  "name": "mfe-proxy",
   "version": "1.0.0",
   "description": "development tools for module federated repositories",
   "main": "bin/index.js",
@@ -11,7 +11,7 @@
     "start": "npm run build && nodemon bin/index.js start"
   },
   "bin": {
-    "mf-proxy": "./bin/index.js"
+    "mfe-proxy": "./bin/index.js"
   },
   "author": "Chang Chuan Hao",
   "license": "ISC",

@@ -73,7 +73,7 @@ const createSocketListener = (preference) => (data) => {
     console.log('updated preference: ', preference);
 };
 /**
- * Starts mf-proxy server
+ * Starts mfe-proxy server
  * @param {object} config
  * @param {string} host
  * @param {number} port
