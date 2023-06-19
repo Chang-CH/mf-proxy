@@ -85,7 +85,7 @@ const createSocketListener =
   };
 
 /**
- * Starts mf-scripts server
+ * Starts mf-proxy server
  * @param {object} config
  * @param {string} host
  * @param {number} port

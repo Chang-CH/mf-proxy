@@ -1,5 +1,5 @@
 remotes:
-    mf-scripts1:
+    mf-proxy1:
         remoteUrl: chang-ch.github.io
         localPath: master
         localCommand: master

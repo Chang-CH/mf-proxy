@@ -25,7 +25,7 @@ function main() {
         .usage('$0 <cmd> [args]')
         .option('p', {
         alias: 'port',
-        describe: 'mf-scripts server port',
+        describe: 'mf-proxy server port',
         type: 'number',
         demandOption: false,
     })
@@ -40,7 +40,7 @@ function main() {
     const files = fs_1.default.readdirSync(process.cwd());
     const configs = {};
     for (const file of files) {
-        if (file.startsWith('mf-scripts') || file === '.mf-scripts') {
+        if (file.startsWith('mf-proxy') || file === '.mf-proxy') {
             const filespec = file.split('.');
             const type = filespec?.[1];
             if (filespec.length === 4) {
@@ -53,7 +53,7 @@ function main() {
     if (configs.default === null &&
         configs.dev === null &&
         configs.prod === null) {
-        console.error('No mf-scripts config file found');
+        console.error('No mf-proxy config file found');
         return;
     }
     // TODO: support other types

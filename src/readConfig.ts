@@ -2,7 +2,7 @@ import fs from 'fs';
 import yaml from 'js-yaml';
 
 /**
- * Reads mf-scripts config file
+ * Reads mf-proxy config file
  */
 export default async function readConfig(
   filePath: string,

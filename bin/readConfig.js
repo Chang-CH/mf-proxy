@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = __importDefault(require("fs"));
 const js_yaml_1 = __importDefault(require("js-yaml"));
 /**
- * Reads mf-scripts config file
+ * Reads mf-proxy config file
  */
 async function readConfig(filePath, args) {
     const data = fs_1.default.readFileSync(filePath, 'utf8');
