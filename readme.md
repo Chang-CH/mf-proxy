@@ -21,23 +21,27 @@ The server will proxy requests from `/{module name}/...` to either the local sou
 
 1. Create a config file
 
-```yaml
-remotes:
-  component1:
-    remoteUrl: remote.com # remote URL to get module from
-    moduleName: component1 # name of remote module
-    bonjourName: webpack-component1 # name of bonjour server
-```
+   ```yaml
+   remotes:
+     component1:
+       remoteUrl: remote.com # remote URL to get module from
+       moduleName: component1 # name of remote module
+       bonjourName: webpack-component1 # name of bonjour server
+   ```
 
 2. start `mfe-proxy`:
 
-```s
-> npx @chang-ch/mfe-proxy
-```
+   ```s
+   > npx @chang-ch/mfe-proxy
+   ```
 
-A config panel will be available on the root url of the port (e.g. `localhost:8080`)
+   A config panel will be available on the root url of the port (e.g. `localhost:8080`)
 
 3. Change module sources as desired in the config panel
+
+   <div align="center">
+   <img src="./docs/panel.png" width="700px"/>
+   </div>
 
    - `local` will try to proxy requests from `/{module name}/...` to `localhost:port/...` of the local dev server if available. If local dev server is unavailable requests are proxied to the remote url in the config
    - `remote` will proxy requests from `/{module name}/...` to `{remoteUrl}/...`.
