@@ -8,6 +8,7 @@
 </div>
 
 <h2 align="center">Install</h2>
+
 ```bash
   npm i --save-dev mfe-proxy
 ```

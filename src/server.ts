@@ -9,7 +9,7 @@ import { WebSocket, WebSocketServer } from 'ws';
  * @param req
  * @param res
  */
-const createListener =
+const createServerListener =
   (
     config: { [key: string]: any },
     locals: { [key: string]: RemoteService },
@@ -73,6 +73,11 @@ const createListener =
       });
   };
 
+/**
+ * Websocket for listening to local module server status
+ * @param preference
+ * @returns
+ */
 const createSocketListener =
   (preference: { [key: string]: 'local' | 'remote' }) => (data: any) => {
     const message = JSON.parse(data.toString());
@@ -100,7 +105,7 @@ export default function startServer(
   const locals: { [key: string]: RemoteService } = {}; // local dev servers of known module names
   const preference: { [key: string]: 'local' | 'remote' } = {}; // user preference for local/remote
 
-  const httpListener = createListener(config, locals, preference);
+  const httpListener = createServerListener(config, locals, preference);
   const wsListener = createSocketListener(preference);
 
   server = http.createServer(httpListener);

@@ -6,6 +6,11 @@ interface Remote {
   localCommand?: string;
 }
 
+/**
+ * Generates the home page at the root url
+ * @param items remote module dependencies
+ * @returns
+ */
 export function generateHome(items: { [key: string]: Remote }) {
   const result = `<!DOCTYPE html>
     <head>

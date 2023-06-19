@@ -12,7 +12,7 @@ const ws_1 = require("ws");
  * @param req
  * @param res
  */
-const createListener = (config, locals, preference) => (req, res) => {
+const createServerListener = (config, locals, preference) => (req, res) => {
     // @ts-ignore
     const baseURL = req.protocol + '://' + req.headers.host + '/';
     const reqUrl = new URL(req.url ?? '/', baseURL);
@@ -43,7 +43,7 @@ const createListener = (config, locals, preference) => (req, res) => {
         // proxy to remote dev server
         url = `https://${config?.remotes?.[module]?.remoteUrl}/${path}`;
     }
-    console.log(preference, preference[module], ' fetch: ', url);
+    console.log('fetch: ', url);
     fetch(url)
         .then(response => {
         const body = response.body;
@@ -63,6 +63,11 @@ const createListener = (config, locals, preference) => (req, res) => {
         res.end();
     });
 };
+/**
+ * Websocket for listening to local module server status
+ * @param preference
+ * @returns
+ */
 const createSocketListener = (preference) => (data) => {
     const message = JSON.parse(data.toString());
     if (!message || !message.module || !message.source)
@@ -82,7 +87,7 @@ function startServer(config, host, port) {
     let server;
     const locals = {}; // local dev servers of known module names
     const preference = {}; // user preference for local/remote
-    const httpListener = createListener(config, locals, preference);
+    const httpListener = createServerListener(config, locals, preference);
     const wsListener = createSocketListener(preference);
     server = http_1.default.createServer(httpListener);
     server.on('error', (e) => {
@@ -125,6 +130,7 @@ function startServer(config, host, port) {
         });
     });
     const bonjour = (0, bonjour_1.default)();
+    // TODO: detect webpack server dead
     const browser = bonjour.find({ type: 'http', subtypes: ['webpack'] }, (data) => {
         locals[data.name] = data;
         const message = {};

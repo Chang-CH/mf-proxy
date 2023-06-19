@@ -1,6 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateHome = void 0;
+/**
+ * Generates the home page at the root url
+ * @param items remote module dependencies
+ * @returns
+ */
 function generateHome(items) {
     const result = `<!DOCTYPE html>
     <head>
