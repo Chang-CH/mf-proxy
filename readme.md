@@ -10,7 +10,7 @@
 <h2 align="center">Install</h2>
 
 ```bash
-  npm i --save-dev mfe-proxy
+  npm i --save-dev @chang-ch/mfe-proxy
 ```
 
 This is a proxy server that listens to `webpack` dev servers published with `bonjour` and proxies requests to the local/remote servers.
@@ -32,7 +32,7 @@ remotes:
 2. start `mfe-proxy`:
 
 ```s
-> mfe-proxy
+> npx @chang-ch/mfe-proxy
 ```
 
 A config panel will be available on the root url of the port (e.g. `localhost:8080`)

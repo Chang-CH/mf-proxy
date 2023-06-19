@@ -1,6 +1,6 @@
 {
   "name": "@chang-ch/mfe-proxy",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "development tools for module federated repositories",
   "main": "bin/index.js",
   "type": "commonjs",
